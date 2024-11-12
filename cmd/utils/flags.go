@@ -57,6 +57,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb/remotedb"
 	"github.com/ethereum/go-ethereum/ethstats"
 	"github.com/ethereum/go-ethereum/graphql"
+	"github.com/ethereum/go-ethereum/guardian"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
 	"github.com/ethereum/go-ethereum/internal/flags"
 	"github.com/ethereum/go-ethereum/log"
@@ -980,6 +981,19 @@ Please note that --` + MetricsHTTPFlag.Name + ` must be set to start the server.
 		Usage:    "Enable 4844 blob transactions",
 		Category: flags.EthCategory,
 	}
+
+	GuardianDisabledFlag = &cli.BoolFlag{
+		Name:     "guardian.disable",
+		Usage:    "Disable guardian mode",
+		Category: flags.GuardianCategory,
+	}
+
+	GuardianFilterFilePathFlag = &cli.StringFlag{
+		Name:     "guardian.filter.filepath",
+		Usage:    "File path to the bloom filter file",
+		Value:    "",
+		Category: flags.GuardianCategory,
+	}
 )
 
 var (
@@ -1699,6 +1713,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	setMiner(ctx, &cfg.Miner)
 	setRequiredBlocks(ctx, cfg)
 	setLes(ctx, cfg)
+	setGuardian(ctx, &cfg.Guardian)
 
 	// Cap the cache allowance and tune the garbage collector
 	mem, err := gopsutil.VirtualMemory()
@@ -1982,6 +1997,16 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 			cfg.VMTrace = name
 			cfg.VMTraceJsonConfig = config
 		}
+	}
+}
+
+func setGuardian(ctx *cli.Context, c *guardian.Config) {
+	if ctx.IsSet(GuardianDisabledFlag.Name) {
+		c.Disabled = ctx.Bool(GuardianDisabledFlag.Name)
+	}
+
+	if ctx.IsSet(GuardianFilterFilePathFlag.Name) {
+		c.FilterFilePath = ctx.String(GuardianFilterFilePathFlag.Name)
 	}
 }
 

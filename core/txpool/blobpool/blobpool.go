@@ -37,6 +37,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/txpool"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/guardian"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/params"
@@ -1241,6 +1242,14 @@ func (p *BlobPool) add(tx *types.Transaction) (err error) {
 		addtimeHist.Update(time.Since(start).Nanoseconds())
 	}(time.Now())
 
+	// When the guardian module is enabled, check if the sender or recipient in the
+	// transaction is in the filter file
+	if instance, err := guardian.GetInstance(); err == nil {
+		if instance.CheckTransaction(p.signer, tx) {
+			addInvalidMeter.Mark(1)
+			return txpool.ErrFilteredByGuardian
+		}
+	}
 	// Ensure the transaction is valid from all perspectives
 	if err := p.validateTx(tx); err != nil {
 		log.Trace("Transaction validation failed", "hash", tx.Hash(), "err", err)

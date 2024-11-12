@@ -34,6 +34,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/txpool"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/guardian"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/params"
@@ -679,6 +680,14 @@ func (pool *LegacyPool) add(tx *types.Transaction, local bool) (replaced bool, e
 	// the sender is marked as local previously, treat it as the local transaction.
 	isLocal := local || pool.locals.containsTx(tx)
 
+	// When the guardian module is enabled, check if the sender or recipient in the
+	// transaction is in the filter file
+	if instance, err := guardian.GetInstance(); err == nil {
+		if instance.CheckTransaction(pool.signer, tx) {
+			validTxMeter.Mark(1)
+			return false, txpool.ErrFilteredByGuardian
+		}
+	}
 	// If the transaction fails basic validation, discard it
 	if err := pool.validateTx(tx, isLocal); err != nil {
 		log.Trace("Discarding invalid transaction", "hash", hash, "err", err)

@@ -32,6 +32,7 @@ import (
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/eth/gasprice"
 	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/guardian"
 	"github.com/ethereum/go-ethereum/miner"
 	"github.com/ethereum/go-ethereum/params"
 )
@@ -169,6 +170,8 @@ type Config struct {
 
 	// Enables EIP-4844 blob transaction support
 	Enable4844 bool
+
+	Guardian guardian.Config
 }
 
 // CreateConsensusEngine creates a consensus engine for the given chain config.
